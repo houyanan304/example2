@@ -1,17 +1,11 @@
 coveralls-maven-plugin
 ======================
 
-[![Build Status](http://img.shields.io/travis/trautonen/coveralls-maven-plugin/master.svg?style=flat-square)](https://travis-ci.org/trautonen/coveralls-maven-plugin)
-[![Coverage Status](http://img.shields.io/coveralls/trautonen/coveralls-maven-plugin/master.svg?style=flat-square)](https://coveralls.io/r/trautonen/coveralls-maven-plugin?branch=master)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.eluder.coveralls/coveralls-maven-plugin/badge.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.eluder.coveralls/coveralls-maven-plugin/)
+[![Build Status](http://img.shields.io/travis/trautonen/coveralls-maven-plugin/master.svg)](https://travis-ci.org/trautonen/coveralls-maven-plugin)
+[![Coverage Status](http://img.shields.io/coveralls/trautonen/coveralls-maven-plugin/master.svg)](https://coveralls.io/r/trautonen/coveralls-maven-plugin?branch=master)
 
 Maven plugin for submitting Java code coverage reports to [Coveralls](https://coveralls.io/) web
 service.
-
-### Requirements
-
-* Java 6 up to 3.x and Java 7 for 4.x onwards.
-* Maven 3.0.0 or newer.
 
 
 ### Features
@@ -19,11 +13,10 @@ service.
 * Supports [Cobertura](http://mojo.codehaus.org/cobertura-maven-plugin/),
   [JaCoCo](http://www.eclemma.org/jacoco/trunk/doc/maven.html) and
   [Saga](http://timurstrekalov.github.io/saga/) coverage tools
-* Multi-module report aggregation
+* Multi-module report aggregation with Cobertura
 * Built-in support for [Travis CI](https://travis-ci.org/), [Circle](https://circleci.com/),
-  [Codeship](https://www.codeship.io/), [Jenkins](http://jenkins-ci.org/),
-  [Bamboo](https://www.atlassian.com/software/bamboo/), [Shippable](https://www.shippable.com/)
-  and [Appveyor](http://www.appveyor.com/) continuous integration services
+  [Codeship](https://www.codeship.io/), [Jenkins](http://jenkins-ci.org/) and
+  [Bamboo](https://www.atlassian.com/software/bamboo/) continuous integration services
 * Fully streaming implementation for fast report generation and small memory footprint
 * Provides clean interfaces to allow easy extending to different coverage tools
 * Convention over configuration for almost zero configuration usage
@@ -38,7 +31,7 @@ Set up the Coveralls maven plugin in the build section of the project pom.xml:
 <plugin>
     <groupId>org.eluder.coveralls</groupId>
     <artifactId>coveralls-maven-plugin</artifactId>
-    <version>4.3.0</version>
+    <version>2.2.0</version>
     <configuration>
         <repoToken>yourcoverallsprojectrepositorytoken</repoToken>
     </configuration>
@@ -49,15 +42,16 @@ Set up the Coveralls maven plugin in the build section of the project pom.xml:
 
 If used as a standalone Maven build or with any continuous integration server other than Travis
 CI, the Coveralls repository token must be provided. This can be achieved by setting the
-configuration section in the plugin or setting the Maven property `repoToken` to your coveralls
-project repository token, using `-DrepoToken=yourcoverallsprojectrepositorytoken` when running the
-maven command. **Do not publish your repository token in public GitHub repositories.** If you do,
-anyone can submit coverage data without permission.
+configuration section in the plugin or setting the Maven property `repoToken` to your coveralls project repository token, using
+`-DrepoToken=yourcoverallsprojectrepositorytoken` when running the maven command. **Do not publish
+your repository token in public GitHub repositories.** If you do, anyone can submit coverage data without permission.
 
-If you are using Travis CI, CircleCI, Codeship, Jenkins or Bamboo continuous integration services,
-no other configuration is required. The plugin's built-in service environment support take care of
-the rest. The plugin tries to find report files for any of the supported coverage tools and
-finally aggregates the coverage report. Java 8 is currently supported only by JaCoCo.
+If you are using Travis CI, Circle, Codeship, Jenkins or Bamboo continuous integration services, no
+other configuration is required. The plugin's built-in service environment support take care of
+the rest. Multi-module projects that require aggregated reports have to set up Cobertura Maven
+plugin for the root project with `aggregate=true`. For other projects you are free to choose
+either [Cobertura](#cobertura) or [JaCoCo](#jacoco) plugin. Finally add the corresponding Maven
+command for the selected plugin to your continuous integration service build job.
 
 See [Complete plugin configuration](#complete-plugin-configuration) for all of the available
 configuration parameters.
@@ -72,7 +66,7 @@ pom.xml:
 <plugin>
     <groupId>org.codehaus.mojo</groupId>
     <artifactId>cobertura-maven-plugin</artifactId>
-    <version>2.7</version>
+    <version>2.6</version>
     <configuration>
         <format>xml</format>
         <maxmem>256m</maxmem>
@@ -85,14 +79,14 @@ pom.xml:
 Execute Maven to create Cobertura report and submit Coveralls data:
 
 ```
-mvn cobertura:cobertura coveralls:report
+mvn cobertura:cobertura coveralls:cobertura
 ```
 
 For example if you are using Travis CI this means you need to add to your `.travis.yml` the lines:
 
 ```
 after_success:
-  - mvn clean cobertura:cobertura coveralls:report
+  - mvn clean cobertura:cobertura coveralls:cobertura
 ```
 
 
@@ -104,7 +98,7 @@ Set up the JaCoCo Maven plugin in the build section of the project pom.xml:
 <plugin>
     <groupId>org.jacoco</groupId>
     <artifactId>jacoco-maven-plugin</artifactId>
-    <version>0.7.6.201602180812</version>
+    <version>0.7.2.201409121644</version>
     <executions>
         <execution>
             <id>prepare-agent</id>
@@ -119,14 +113,14 @@ Set up the JaCoCo Maven plugin in the build section of the project pom.xml:
 Execute Maven to create JaCoCo report and submit Coveralls data:
 
 ```
-mvn clean test jacoco:report coveralls:report
+mvn clean test jacoco:report coveralls:jacoco
 ```
 
 Again, if you are using Travis CI this means you need to add to your `.travis.yml` the lines:
 
 ```
 after_success:
-  - mvn clean test jacoco:report coveralls:report
+  - mvn clean test jacoco:report coveralls:jacoco
 ```
 
 
@@ -138,7 +132,7 @@ Set up the Saga Maven plugin in the build section of the project pom.xml:
 <plugin>
     <groupId>com.github.timurstrekalov</groupId>
     <artifactId>saga-maven-plugin</artifactId>
-    <version>1.5.5</version>
+    <version>1.5.2</version>
     <executions>
         <execution>
             <goals>
@@ -151,48 +145,53 @@ Set up the Saga Maven plugin in the build section of the project pom.xml:
         <outputDir>${project.build.directory}/saga-coverage</outputDir>
         <noInstrumentPatterns>
             <pattern>.*/spec/.*</pattern>
-            <pattern>.*/classpath/.*</pattern>
-            <pattern>.*/webjars/.*</pattern>
         </noInstrumentPatterns>
     </configuration>
 </plugin>
 ```
 
-Note that Saga does not have default report output directory, but the plugin assumes
-`${project.build.directory}/saga-coverage`.
+You should also set the `sourceUrls` parameter for the plugin to load the sources from Jaasmine
+server. This allows creating coverage reports also for example CoffeeScript sources:
+
+```xml
+<sourceUrls>
+    <sourceUrl>http://localhost:${jasmine.serverPort}</sourceUrl>
+</sourceUrls>
+```
 
 Execute Maven to create Saga report and submit Coveralls data:
 
 ```
-mvn clean test saga:coverage coveralls:report
+mvn clean test saga:coverage coveralls:saga
+```
+
+And if you are using Travis CI this means you need to add to your `.travis.yml` the lines:
+```
+after_success:
+  - mvn clean test saga:coverage coveralls:saga
+```
+
+
+#### Chain
+
+Create Coveralls data from multiple coverage tools.
+*Note: The chaining approach will be the default approach for future versions of coveralls maven
+plugin usage. Probably with the difference that the goal is changed from `chain` to `report`.*
+
+Configure the coverage plugins as described earlier and instead of single coverage tool goal
+use the `chain` goal to aggregate all coverage sources.
+
+Execute Maven to create Cobertura and Saga report and submit Coveralls data:
+
+```
+mvn clean test saga:coverage cobertura:cobertura coveralls:chain
 ```
 
 And if you are using Travis CI this means you need to add to your `.travis.yml` the lines:
 
 ```
 after_success:
-  - mvn clean test saga:coverage coveralls:report
-```
-
-
-#### Aggregate multiple reports
-
-Report aggregation is applied by default and the only thing the user must take care of is to run
-all the desired coverage tools. You can use JaCoCo in a multi-module project so that all modules
-run JaCoCo separately and let the plugin aggregate the report, or you can run Saga and Cobertura
-in same project and get coverage report for JavaScript and Java files.
-
-Execute Maven to create Saga and Cobertura report and submit Coveralls data:
-
-```
-mvn clean test saga:coverage cobertura:cobertura coveralls:report
-```
-
-And if you are using Travis CI this means you need to add to your `.travis.yml` the lines:
-
-```
-after_success:
-  - mvn clean test saga:coverage cobertura:cobertura coveralls:report
+  - mvn clean test saga:coverage cobertura:cobertura coveralls:chain
 ```
 
 
@@ -207,13 +206,10 @@ service environment will not override it.
 
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
-| `jacocoReports` | `List<File>` | List of additional JaCoCo report files. ${project.reporting.outputDirectory}/jacoco/jacoco.xml is used as default for every module. |
-| `coberturaReports` | `List<File>` | List of additional Cobertura report files. ${project.reporting.outputDirectory}/cobertura/coverage.xml is used as default for every module. |
-| `sagaReports` | `List<File>` | List of additional Saga report files. ${project.build.directory}/saga-coverage/total-coverage.xml is used as default for every module. |
-| `relativeReportDirs` | `List<String>` | List of additional relative report directories. Directories relative to ${project.reporting.outputDirectory} and ${project.build.directory} are scanned for reports. |
 | `coverallsFile` | `File` | **Default: ${project.build.directory}/coveralls.json**<br>File path to write and submit Coveralls data. |
 | `coverallsUrl` | `String` | **Default: https://coveralls.io/api/v1/jobs**<br>Url for the Coveralls API. |
-| `sourceDirectories` | `List<File>` | List of additional source directories. The plugin will scan the project's compiled source roots for defaults. |
+| `sourceDirectories` | `List<File>` | List of source directories. If not provided, the plugin will scan the project's compiled source roots. |
+| `sourceUrls` | `List<URL>` | List of source urls. Can be used to load sources from external service, e.g. Jasmine server. |
 | `sourceEncoding` | `String` | **Default: ${project.build.sourceEncoding}**<br>Source file encoding. |
 | `serviceName` | `String` | CI service name. If not provided the supported service environments are used. |
 | `serviceJobId` | `String` | CI service job id. Currently supported only with Travis CI. If this property is set, `repoToken` is not required. If not provided the supported service environments are used. | 
@@ -223,13 +219,12 @@ service environment will not override it.
 | `repoToken` | `String` | Coveralls repository token. **Do not publish this parameter unencrypted in public GitHub repositories.** |
 | `branch` | `String` | Git branch name. If not provided the supported service environments are used. |
 | `pullRequest` | `String` | GitHub pull request identifier. If not provided the supported service environments are used. |
-| `timestampFormat` | `String` | **Default: ${maven.build.timestamp}**<br>Build timestamp format. Must be in format supported by SimpleDateFormat. |
-| `timestamp` | `String` | **Default: ${timestamp}**<br>Build timestamp. Must be in format defined by 'timestampFormat' if it's available or in default timestamp format yyyy-MM-dd'T'HH:mm:ss'Z'. |
+| `timestamp` | `Date` | **Default: ${timestamp}**<br>Build timestamp. Must be in Maven supported 'yyyy-MM-dd HH:mm:ssa' format. |
 | `dryRun` | `boolean` | **Default: false**<br>Dry run Coveralls report without actually sending it. |
-| `failOnServiceError` | `boolean` | **Default: true**<br> Fail build if Coveralls service is not available or submission fails for internal errors. |
-| `scanForSources` | `boolean` | **Default: false**<br>Scan subdirectories for source files. |
-| `coveralls.basedir` | `File` | **Default: ${project.basedir}**<br>Base directory of the project. |
 | `coveralls.skip` | `boolean` | **Default: false**<br>Skip the plugin execution. |
+| `coberturaFile` | `File` | **Default: ${project.reporting.outputDirectory}/cobertura/coverage.xml**<br>Only for `chain` goal. Cobertura report file. |
+| `jacocoFile` | `File` | **Default: ${project.reporting.outputDirectory}/jacoco/jacoco.xml**<br>Only for `chain` goal. JaCoCo report file. |
+| `sagaFile` | `File` | **Default: ${project.build.directory}/saga-coverage/total-coverage.xml**<br>Only for `chain` goal. Saga report file. |
 
 
 ### FAQ
@@ -242,14 +237,6 @@ service environment will not override it.
 > **Q:** I get BUILD SUCCESS but why Coveralls shows only question marks in the reports?  
 > **A:** The data is most likely reported correctly, but Coveralls might take hours, or even a
 > day, to update the actual coverage numbers.
-
-<!-- -->
-> **Q:** Can I use Java 8 with the plugin?  
-> **A:** Yes. The Coveralls plugin works fine with Java 8, but the problem is the coverage tools.
-> Currently only tool supporting Java 8 is JaCoCo. You can use JaCoCo in a single module or
-> a multi-module project and let the Coveralls plugin handle the report aggregation. This is not
-> true aggregation though and does not address cross module coverage calculation (see
-> https://github.com/jacoco/jacoco/pull/97)
 
 <!-- -->
 > **Q:** Build fails with 'javax.net.ssl.SSLPeerUnverifiedException: peer not authenticated'
@@ -268,8 +255,8 @@ service environment will not override it.
 > **Q:** How can I use Scala or some other project which sources reside in other folder than
 > `src/main/java`?  
 > **A:** The plugin uses all compiled source roots available for the project at runtime. If the
-> source directories are available, everything is fine. Otherwise additional source directories
-> can be applied with `sourceDirectories` configuration parameter that takes a Maven configuration
+> source directories are available, everything is fine. Otherwise the used source directories can
+> be changed with `sourceDirectories` configuration parameter that takes a Maven configuration
 > style list of source directories.
 
 <!-- -->
@@ -306,21 +293,82 @@ service environment will not override it.
 
 ### Changelog
 
-See [changelog](CHANGELOG.md) for more details.
+#### 2.2.0
+
+- #31: Improved error messages for Coveralls API failures
+- #30: Improved error message for missing charset
+- #28: More lenient XML parsing
+- #26, #29: Support for Saga coverage tool and chain multiple coverage reports
 
 
-### Migration
+#### 2.1.0
 
-See [migration](MIGRATION.md) documentation for more information.
+- #24: Filter out remote names from git branches
+- #19, #20: Skip configuration property to allow skipping of plugin execution
+
+
+#### 2.0.1
+
+- #18: Update to HttpComponents HttpClient 4.3
+- #15, #16, #17: Disable PKCS cryptography provider at runtime to work around OpenJDK SSL issue
+
+
+#### 2.0.0
+
+- #13: Dry run property for test builds
+- #12: Use ServiceSetup as secondary configuration source and Maven/VM properties as primary
+- #11: Support multiple source directories
+- #9: Support for other CI tools and platforms
+- #8: Aggregated reports for multi-module projects
+
+
+#### 1.2.0
+
+- #10: Validation of the Coveralls job
+- #4: Report build timestamp to Coveralls
+- #3: Log code lines from generated report to Maven console
+
+
+#### 1.1.0
+
+- #1: Easier configuration for Travis CI
+
+
+#### 1.0.0
+
+- Initial release
+
+
+### Migration guide
+
+Changes marked with bold affect the plugin usage. Other changes are only related to development
+and codebase.
+
+
+#### 1.x to 2.x
+
+- **`sourceDirectory` parameter removed and replaced with a list parameter `sourceDirectories`**
+- **service environment parameters do not override configuration parameters**
+- `org.eluder.coveralls.maven.plugin.service.ServiceSetup` interface completely changed to reflect
+  the service specific configuration properly
+- `org.eluder.coveralls.maven.plugin.service.Travis` changed to reflect the new service setup
+  interface
+- `org.eluder.coveralls.maven.plugin.domain.JobValidator` and all validation related code is
+  now located in `org.eluder.coveralls.maven.plugin.validation` package
+- `org.eluder.coveralls.maven.plugin.domain.GitRepository` does not take custom branch parameter
+  as constructor argument anymore, the same behavior is handled with the new service environment
+  setup
+- `org.eluder.coveralls.maven.plugin.domain.Job` has only default constructor and initialization
+  is done with _with*_ methods, _validate()_ method returns list of validation errors instead of
+  throwing exception
+- `org.eluder.coveralls.maven.plugin.domain.SourceLoader` constructor takes a list of source
+  directories instead of a single source directory
 
 
 ### Credits
 
 - Jakub Bednář (@bednar) for Saga integration and the idea of chaining multiple reports provided
   by different coverage tools.
-- Marvin Froeder (@velo) for Shippable and Appveyor support, configurable basedir and directory
-  scanning source loader.
-- Pasi Niemi (@psiniemi) for coverage merging from different reports to single source file.
 
 
 ### Continuous integration
@@ -328,31 +376,6 @@ See [migration](MIGRATION.md) documentation for more information.
 Travis CI builds the plugin with Oracle JDK 7. All successfully built snapshots are deployed to
 Sonatype OSS repository. Cobertura is used to gather coverage metrics and the report is submitted
 to Coveralls with this plugin.
-
-
-### Using test versions
-
-Add the following repository configurations to your `pom.xml` to enable snapshot versions of this
-plugin to be used.
-
-```xml
-  <repositories>
-    <repository>
-      <id>sonatype-nexus-snapshots</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-      <releases><enabled>false</enabled></releases>
-      <snapshots><enabled>true</enabled></snapshots>
-    </repository>
-  </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-      <id>sonatype-nexus-snapshot</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-      <releases><enabled>false</enabled></releases>
-      <snapshots><enabled>true</enabled></snapshots>
-    </pluginRepository>
-  </pluginRepositories>
-```
 
 
 ### License
